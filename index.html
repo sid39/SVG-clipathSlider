@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]>      <html class="no-js"> <!--<![endif]-->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>SVG clipath slider</title>
+    <meta name="description" content="SVG clipath slider" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" href="css/style.css" />
+  </head>
+  <body>
+    <!--[if lt IE 7]>
+      <p class="browsehappy">
+        You are using an <strong>outdated</strong> browser. Please
+        <a href="#">upgrade your browser</a> to improve your experience.
+      </p>
+    <![endif]-->
+    <div class="slideshow">
+      <div class="slides">
+        <div class="slide current">
+          <div
+            class="slideImg"
+            style="
+              background-image: url(//images.unsplash.com/photo-1591202312428-46168ecbdf60);
+            "
+          ></div>
+          <div class="context">
+            <h2 class="slideTitle">Humming<br />bird</h2>
+          </div>
+          <div class="slideLink">
+            <span
+              >Photo by
+              <a
+                href="https://unsplash.com/@jcotten?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText"
+                >Joshua J. Cotten</a
+              >
+              on
+              <a
+                href="https://unsplash.com/s/photos/hummingbird?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText"
+                >Unsplash</a
+              ></span
+            >
+          </div>
+        </div>
+        <div class="slide">
+          <div
+            class="slideImg"
+            style="
+              background-image: url(//images.unsplash.com/photo-1437622368342-7a3d73a34c8f);
+            "
+          ></div>
+          <div class="context">
+            <h2 class="slideTitle">Sea<br />turtle</h2>
+          </div>
+          <div class="slideLink">
+            <span
+              >Photo by
+              <a
+                href="https://unsplash.com/@kmkr?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText"
+                >Kris Mikael Krister</a
+              >
+              on
+              <a
+                href="https://unsplash.com/?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText"
+                >Unsplash</a
+              ></span
+            >
+          </div>
+        </div>
+        <div class="slide">
+          <div
+            class="slideImg"
+            style="
+              background-image: url(//images.unsplash.com/photo-1551725301-5183dc1dbb83);
+            "
+          ></div>
+          <div class="context">
+            <h2 class="slideTitle">Red<br />fox</h2>
+          </div>
+          <div class="slideLink">
+            <span
+              >Photo by
+              <a
+                href="https://unsplash.com/@introspectivedsgn?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText"
+                >Erik Mclean</a
+              >
+              on
+              <a
+                href="https://unsplash.com/s/photos/fox?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText"
+                >Unsplash</a
+              ></span
+            >
+          </div>
+        </div>
+      </div>
+      <nav class="slidenav">
+        <button class="slidenavItem prevBtn"><</button>
+        <button class="slidenavItem nextBtn">></button>
+      </nav>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+      (function () {
+        function debounce(func, wait, immediate) {
+          var timeout;
+          return function () {
+            var context = this,
+              args = arguments;
+            var later = function () {
+              timeout = null;
+              if (!immediate) func.apply(context, args);
+            };
+            var callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+          };
+        }
+
+        class Slideshow {
+          constructor(el) {
+            this.DOM = {};
+            this.DOM.el = el;
+            this.settings = {
+              animation: {
+                slides: {
+                  duration: 600,
+                  easing: "easeOutQuint",
+                },
+                shape: {
+                  duration: 250,
+                  easing: { in: "easeOutQuad", out: "easeOutQuad" },
+                },
+              },
+              frameFill: "url(#gradient1)",
+            };
+            this.init();
+          }
+
+          init() {
+            this.DOM.slides = Array.from(
+              this.DOM.el.querySelectorAll(".slides > .slide")
+            );
+            this.slidesTotal = this.DOM.slides.length;
+            this.DOM.nav = this.DOM.el.querySelector(".slidenav");
+            this.DOM.nextBtn = this.DOM.nav.querySelector(".nextBtn");
+            this.DOM.prevBtn = this.DOM.nav.querySelector(".prevBtn");
+            this.current = 0;
+            this.createFrame();
+            this.initEvents();
+          }
+
+          createFrame() {
+            this.rect = this.DOM.el.getBoundingClientRect();
+            this.frameSize = this.rect.width / 10;
+            this.paths = {
+              initial: this.calculatePath("initial"),
+              final: this.calculatePath("final"),
+            };
+            this.DOM.svg = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "svg"
+            );
+            this.DOM.svg.setAttribute("class", "shape");
+            this.DOM.svg.setAttribute("width", "100%");
+            this.DOM.svg.setAttribute("height", "100%");
+            this.DOM.svg.setAttribute(
+              "viewbox",
+              `0 0 ${this.rect.width} ${this.rect.height}`
+            );
+            this.DOM.svg.innerHTML = `
+                  <defs>
+                  <linearGradient id="gradient1" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#679895">
+                          <animate attributeName="stop-color" values="#679895; #58304a; #679895" dur="2s" repeatCount="indefinite"></animate>
+                      </stop>
+                      <stop offset="100%" stop-color="#58304a">
+                          <animate attributeName="stop-color" values="#58304a; #679895; #58304a" dur="2s" repeatCount="indefinite"></animate>
+                      </stop>
+                  </linearGradient>
+                  </defs>
+                  <path fill="${this.settings.frameFill}" d="${this.paths.initial}" class="svgPath"/>
+              `;
+            this.DOM.el.insertBefore(this.DOM.svg, this.DOM.nav);
+            this.DOM.shape = this.DOM.svg.querySelector("path");
+          }
+
+          updateFrame() {
+            this.paths.initial = this.calculatePath("initial");
+            this.paths.final = this.calculatePath("final");
+            this.DOM.svg.setAttribute(
+              "viewbox",
+              `0 0 ${this.rect.width} ${this.rect.height}`
+            );
+            this.DOM.shape.setAttribute("d", this.paths.initial);
+          }
+
+          calculatePath(path = "initial") {
+            if (path === "initial") {
+              return `M 0,0 0,${this.rect.height} ${this.rect.width},${this.rect.height} ${this.rect.width},0 0,0 Z M 0,0 ${this.rect.width},0 ${this.rect.width},${this.rect.height} 0,${this.rect.height} Z`;
+            } else {
+              return {
+                step1: `M 0,0 0,${this.rect.height} ${this.rect.width},${this.rect.height} ${this.rect.width},0 0,0 Z M ${this.frameSize},${this.frameSize} ${this.rect.width},0 ${this.rect.width},${this.rect.height} 0,${this.rect.height} Z`,
+                step2: `M 0,0 0,${this.rect.height} ${this.rect.width},${
+                  this.rect.height
+                } ${this.rect.width},0 0,0 Z M ${this.frameSize},${
+                  this.frameSize
+                } ${this.rect.width - this.frameSize},${this.frameSize} ${
+                  this.rect.width
+                },${this.rect.height} 0,${this.rect.height} Z`,
+                step3: `M 0,0 0,${this.rect.height} ${this.rect.width},${
+                  this.rect.height
+                } ${this.rect.width},0 0,0 Z M ${this.frameSize},${
+                  this.frameSize
+                } ${this.rect.width - this.frameSize},${this.frameSize} ${
+                  this.rect.width - this.frameSize
+                },${this.rect.height - this.frameSize} 0,${this.rect.height} Z`,
+                step4: `M 0,0 0,${this.rect.height} ${this.rect.width},${
+                  this.rect.height
+                } ${this.rect.width},0 0,0 Z M ${this.frameSize},${
+                  this.frameSize
+                } ${this.rect.width - this.frameSize},${this.frameSize} ${
+                  this.rect.width - this.frameSize
+                },${this.rect.height - this.frameSize} ${this.frameSize},${
+                  this.rect.height - this.frameSize
+                } Z`,
+              };
+            }
+          }
+
+          initEvents() {
+            this.DOM.nextBtn.addEventListener("click", () =>
+              this.navigate("next")
+            );
+            this.DOM.prevBtn.addEventListener("click", () =>
+              this.navigate("prev")
+            );
+
+            window.addEventListener(
+              "resize",
+              debounce(() => {
+                this.rect = this.DOM.el.getBoundingClientRect();
+                this.updateFrame();
+              }, 20)
+            );
+          }
+
+          navigate(dir = "next") {
+            if (this.isAnimating) return false;
+            this.isAnimating = true;
+
+            const animateShapeInTimeline = anime.timeline({
+              duration: this.settings.animation.shape.duration,
+              easing: this.settings.animation.shape.easing.in,
+            });
+
+            animateShapeInTimeline
+              .add({
+                targets: this.DOM.shape,
+                d: this.paths.final.step1,
+              })
+              .add({
+                targets: this.DOM.shape,
+                d: this.paths.final.step2,
+                offset: `-=${this.settings.animation.shape.duration * 0.5}`,
+              })
+              .add({
+                targets: this.DOM.shape,
+                d: this.paths.final.step3,
+                offset: `-=${this.settings.animation.shape.duration * 0.5}`,
+              })
+              .add({
+                targets: this.DOM.shape,
+                d: this.paths.final.step4,
+                offset: `-=${this.settings.animation.shape.duration * 0.5}`,
+              });
+
+            const animateSlides = () => {
+              return new Promise((resolve, reject) => {
+                const currentSlide = this.DOM.slides[this.current];
+                anime({
+                  targets: currentSlide,
+                  duration: this.settings.animation.slides.duration,
+                  easing: this.settings.animation.slides.easing,
+                  translateX:
+                    dir === "next" ? -1 * this.rect.width : this.rect.width,
+                  complete: () => {
+                    currentSlide.classList.remove("current");
+                    resolve();
+                  },
+                });
+
+                this.current =
+                  dir === "next"
+                    ? this.current < this.slidesTotal - 1
+                      ? this.current + 1
+                      : 0
+                    : this.current > 0
+                    ? this.current - 1
+                    : this.slidesTotal - 1;
+
+                const newSlide = this.DOM.slides[this.current];
+                newSlide.classList.add("current");
+                anime({
+                  targets: newSlide,
+                  duration: this.settings.animation.slides.duration,
+                  easing: this.settings.animation.slides.easing,
+                  translateX: [
+                    dir === "next" ? this.rect.width : -1 * this.rect.width,
+                    0,
+                  ],
+                });
+
+                const newSlideImg = newSlide.querySelector(".slideImg");
+                anime.remove(newSlideImg);
+                anime({
+                  targets: newSlideImg,
+                  duration: this.settings.animation.slides.duration * 4,
+                  easing: this.settings.animation.slides.easing,
+                  translateX: [dir === "next" ? 200 : -200, 0],
+                });
+
+                anime({
+                  targets: [
+                    newSlide.querySelector(".slideTitle"),
+                    newSlide.querySelector(".slideLink"),
+                  ],
+                  duration: this.settings.animation.slides.duration * 2,
+                  easing: this.settings.animation.slides.easing,
+                  delay: (t, i) => i * 100 + 100,
+                  translateX: [dir === "next" ? 300 : -300, 0],
+                  opacity: [0, 1],
+                });
+              });
+            };
+
+            const animateShapeOut = () => {
+              const animateShapeOutTimeline = anime.timeline({
+                duration: this.settings.animation.shape.duration,
+                easing: this.settings.animation.shape.easing.out,
+              });
+              animateShapeOutTimeline
+                .add({
+                  targets: this.DOM.shape,
+                  d: this.paths.final.step3,
+                })
+                .add({
+                  targets: this.DOM.shape,
+                  d: this.paths.final.step2,
+                  offset: `-=${this.settings.animation.shape.duration * 0.5}`,
+                })
+                .add({
+                  targets: this.DOM.shape,
+                  d: this.paths.final.step1,
+                  offset: `-=${this.settings.animation.shape.duration * 0.5}`,
+                })
+                .add({
+                  targets: this.DOM.shape,
+                  d: this.paths.initial,
+                  offset: `-=${this.settings.animation.shape.duration * 0.5}`,
+                  complete: () => (this.isAnimating = false),
+                });
+            };
+
+            animateShapeInTimeline.finished
+              .then(animateSlides)
+              .then(animateShapeOut);
+          }
+        }
+
+        new Slideshow(document.querySelector(".slideshow"));
+      })();
+    </script>
+  </body>
+</html>
